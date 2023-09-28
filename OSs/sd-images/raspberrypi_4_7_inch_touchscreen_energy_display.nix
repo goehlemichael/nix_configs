@@ -8,8 +8,11 @@ let
 in {
 
   imports = [
+    <nixpkgs/nixos/modules/installer/sd-card/sd-image-aarch64.nix>
     "${builtins.fetchGit { url = "https://github.com/NixOS/nixos-hardware.git"; }}/raspberry-pi/4"
   ];
+
+  sdImage.compressImage = false;
 
   boot = {
     kernelPackages = pkgs.linuxKernel.packages.linux_rpi4;
@@ -29,6 +32,15 @@ in {
       fsType = "ext4";
       options = [ "noatime" ];
     };
+  };
+
+  nixpkgs = {
+    overlays = [
+      (final: super: {
+        makeModulesClosure = x:
+          super.makeModulesClosure (x // { allowMissing = true; });
+      })
+    ];
   };
 
   networking = {

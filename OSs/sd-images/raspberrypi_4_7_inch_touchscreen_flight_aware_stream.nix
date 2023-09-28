@@ -8,8 +8,11 @@ let
 in {
 
   imports = [
+    <nixpkgs/nixos/modules/installer/sd-card/sd-image-aarch64.nix>
     "${builtins.fetchGit { url = "https://github.com/NixOS/nixos-hardware.git"; }}/raspberry-pi/4"
   ];
+
+  sdImage.compressImage = false;
 
   boot = {
     kernelPackages = pkgs.linuxKernel.packages.linux_rpi4;
@@ -31,6 +34,15 @@ in {
     };
   };
 
+  nixpkgs = {
+    overlays = [
+      (final: super: {
+        makeModulesClosure = x:
+          super.makeModulesClosure (x // { allowMissing = true; });
+      })
+    ];
+  };
+
   networking = {
     hostName = hostname;
   };
@@ -38,20 +50,23 @@ in {
   environment.systemPackages = with pkgs; [
     git
     vim
-    libraspberrypi
     raspberrypi-eeprom
+    libraspberrypi
     firefox
     mkpasswd
   ];
+
   environment.etc."profile".text = ''
     export DISPLAY=:0
   '';
+
   services.openssh = {
     enable = true;
     settings.PasswordAuthentication = false;
     settings.KbdInteractiveAuthentication = false;
     settings.PermitRootLogin = "no";
     settings.LogLevel = "VERBOSE";
+    settings.X11Forwarding = true;
   };
   services.tailscale.enable = true;
 
@@ -68,7 +83,9 @@ in {
   };
 
   services.xserver.displayManager.sessionCommands = ''
-    firefox --kiosk https://m.twitch.tv/<insert a twitch stream here>
+    xset s off
+    xset -dpms
+    firefox --kiosk http://<FLIGHTAWARE HOST IP>:8080/
   '';
 
   users = {
